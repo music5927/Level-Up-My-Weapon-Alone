@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta property="og:title" content="나 혼자 (무기를) 레벨업 0.2.5">
-<meta property="og:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.5">
+<meta property="og:title" content="나 혼자 (무기를) 레벨업 0.2.7">
+<meta property="og:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.7">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://music5927.github.io/Level-Up-My-Weapon-Alone/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="나 혼자 (무기를) 레벨업 0.2.5">
-<meta name="twitter:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.5">
+<meta name="twitter:title" content="나 혼자 (무기를) 레벨업 0.2.7">
+<meta name="twitter:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.7">
 
-<title>나 혼자 (무기를) 레벨업 0.2.5</title>
+<title>나 혼자 (무기를) 레벨업 0.2.7</title>
 <style>
 :root{
   --bg:#0f1117; --panel:#181c25; --panel2:#202532; --line:#303747;
@@ -299,8 +299,11 @@ function stats(){
   return {str:str*m,speed:speed/m,precision:precision*m,luck:Math.min(100,luck*m),fan:fan*m};
 }
 function successRate(){
-  const st=stats(),base=100,k=.5,creator=(state.creatorLv-1)*3,band=state.bandageCharges>0?1:0;
-  return Math.max(0,Math.min(100,base-k*state.weaponLv*state.weaponLv+creator+st.precision+band));
+  const x=state.weaponLv;
+  const base=Math.max(1,100-(x*1.5));
+  const precision=stats().precision;
+  const bandage=state.bandageCharges>0?1:0;
+  return Math.max(1,Math.min(100,base+precision+bandage));
 }
 function scrapValue(){return 20+state.weaponLv*40}
 function activeConsumable(){

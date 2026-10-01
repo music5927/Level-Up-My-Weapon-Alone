@@ -5,7 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>나 혼자 (무기를) 레벨업 0.2.3v</title>
+<meta property="og:title" content="나 혼자 (무기를) 레벨업 0.2.4">
+<meta property="og:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.4">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://music5927.github.io/Level-Up-My-Weapon-Alone/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="나 혼자 (무기를) 레벨업 0.2.4">
+<meta name="twitter:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.4">
+
+<title>나 혼자 (무기를) 레벨업 0.2.4</title>
 <style>
 :root{
   --bg:#0f1117; --panel:#181c25; --panel2:#202532; --line:#303747;
@@ -43,10 +51,20 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 .rate small{display:block;color:var(--muted);font-size:11px}
 .rate strong{font-size:22px;display:block;margin-top:2px}
 .enhance{
-  width:100%;min-height:58px;border-radius:14px;background:var(--accent);color:#17130a;
-  font-weight:900;font-size:19px;box-shadow:0 4px 0 #9b6c18
+  --cooldown-progress:100%;
+  position:relative;overflow:hidden;width:100%;min-height:58px;border-radius:14px;
+  background:#3b4352;color:#f4f6fa;font-weight:900;font-size:19px;
+  box-shadow:0 4px 0 #202631;transition:background .12s,color .12s,box-shadow .12s
 }
-.enhance:active{transform:translateY(2px);box-shadow:0 2px 0 #9b6c18}
+.enhance::before{
+  content:"";position:absolute;inset:0 auto 0 0;width:var(--cooldown-progress);
+  background:rgba(255,255,255,.10);pointer-events:none;transition:width .04s linear
+}
+.enhance>span{position:relative;z-index:1}
+.enhance.ready{background:var(--accent);color:#17130a;box-shadow:0 4px 0 #9b6c18}
+.enhance.cooling,.enhance.danger{background:#6b3038;color:#fff;box-shadow:0 4px 0 #3f1d22}
+.enhance.destroyed-state{background:#55708f;color:#fff;box-shadow:0 4px 0 #304156}
+.enhance:active{transform:translateY(2px);box-shadow:0 2px 0 #202631}
 .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:10px}
 .action{min-height:50px;border-radius:13px;background:var(--panel2);border:1px solid var(--line);font-weight:800}
 .action:active{background:#293142;transform:scale(.985)}
@@ -145,7 +163,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
       <strong id="successRate">100%</strong>
     </div>
 
-    <button class="enhance" id="enhanceBtn">⚒️ 강화하기</button>
+    <button class="enhance ready" id="enhanceBtn"><span id="enhanceBtnText">⚒️ 강화하기</span></button>
     <div class="item-use-panel" id="itemUsePanel">
       <div class="item-use-title">아이템 사용</div>
       <div class="item-use-grid">
@@ -307,7 +325,7 @@ function render(){
   $("weaponCard").classList.toggle("destroyed",state.destroyed);
   $("weaponIcon").textContent=state.destroyed?"💥":"⚔️";
   $("weaponName").textContent=state.destroyed?"파괴된 연습용 장검":"연습용 장검";
-  $("enhanceBtn").textContent=state.destroyed?"🔨 새 무기 강화 시작":"⚒️ 강화하기";
+  $("enhanceBtnText").textContent=state.destroyed?"🔨 새 무기 강화 시작":"⚒️ 강화하기";
   const sk=state.creatorLv>=10;
   $("skillOpen").classList.toggle("locked",!sk);
   $("skillOpen").textContent=sk?"✨ 스킬":"🔒 스킬";
@@ -316,6 +334,7 @@ function render(){
   renderItemUse();
   renderLog();
   save();
+  if(typeof updateEnhanceButtonVisual==="function")updateEnhanceButtonVisual();
 }
 function renderItemUse(){
   $("bandageCount").textContent=(state.inventory.bandage||0)+"개";
@@ -517,6 +536,39 @@ function growSkill(i){
   renderSkills();render();
 }
 
+
+function updateEnhanceButtonVisual(){
+  const btn=$("enhanceBtn"),label=$("enhanceBtnText");
+  if(!btn||!label)return;
+  if(state.destroyed){
+    btn.classList.remove("ready","cooling","danger");
+    btn.classList.add("destroyed-state");
+    btn.style.setProperty("--cooldown-progress","100%");
+    label.textContent="🔨 새 무기 강화 시작";
+    return;
+  }
+  btn.classList.remove("destroyed-state");
+  const now=Date.now(),st=stats(),hot=now<state.hot6Until;
+  const required=Math.max(0,st.speed*1000*(hot?.30:1));
+  if(!state.lastEnhanceAt||required<=0){
+    btn.classList.remove("cooling","danger");btn.classList.add("ready");
+    btn.style.setProperty("--cooldown-progress","100%");
+    label.textContent="⚒️ 강화하기 · READY";
+    return;
+  }
+  const elapsed=now-state.lastEnhanceAt;
+  const ratio=Math.max(0,Math.min(1,elapsed/required));
+  btn.style.setProperty("--cooldown-progress",(ratio*100).toFixed(1)+"%");
+  if(ratio>=1){
+    btn.classList.remove("cooling","danger");btn.classList.add("ready");
+    label.textContent="⚒️ 강화하기 · READY";
+  }else{
+    btn.classList.remove("ready","cooling");
+    btn.classList.add("danger");
+    label.textContent="⚒️ "+Math.ceil(Math.max(0,required-elapsed))+"ms";
+  }
+}
+
 $("gameStart").onclick=()=>{state.started=true;$("startScreen").style.display="none";if(!state.logs.length)addLog("게임을 시작했습니다.");render()};
 $("enhanceBtn").onclick=enhance;
 $("statusOpen").onclick=()=>{renderStatus();openModal("statusModal")};
@@ -561,8 +613,8 @@ setInterval(()=>{
   if(prevGuardian&&!guardian){state.guardianUntil=0;addLog("✨ 수호의 빛 사용이 끝났습니다.")}
   prevHot=hot;prevGuardian=guardian;
   if($("statusModal").classList.contains("open"))renderStatus();
-  renderItemUse();save();
-},500);
+  renderItemUse();updateEnhanceButtonVisual();save();
+},50);
 </script>
 </body>
 </html>

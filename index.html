@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta property="og:title" content="나 혼자 (무기를) 레벨업 0.2.4">
-<meta property="og:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.4">
+<meta property="og:title" content="나 혼자 (무기를) 레벨업 0.2.5">
+<meta property="og:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.5">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://music5927.github.io/Level-Up-My-Weapon-Alone/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="나 혼자 (무기를) 레벨업 0.2.4">
-<meta name="twitter:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.4">
+<meta name="twitter:title" content="나 혼자 (무기를) 레벨업 0.2.5">
+<meta name="twitter:description" content="무기를 강화하고 제작자를 성장시키는 모바일 강화 게임 · Prototype 0.2.5">
 
-<title>나 혼자 (무기를) 레벨업 0.2.4</title>
+<title>나 혼자 (무기를) 레벨업 0.2.5</title>
 <style>
 :root{
   --bg:#0f1117; --panel:#181c25; --panel2:#202532; --line:#303747;
@@ -200,7 +200,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
   </div>
 </div>
 
-<div class="modal-bg" id="statusModal"><div class="modal"><div class="modal-head"><h2>📊 스테이터스 <small id="statusSkillPoint" style="font-size:11px;color:var(--muted);font-weight:600"></small></h2><button class="close" data-close="statusModal">×</button></div><div id="statusBody"></div></div></div>
+<div class="modal-bg" id="statusModal"><div class="modal"><div class="modal-head"><h2>📊 스테이터스</h2><button class="close" data-close="statusModal">×</button></div><div id="statusBody"></div></div></div>
 
 <div class="modal-bg" id="resetConfirmModal">
   <div class="modal reset-confirm-modal">
@@ -215,7 +215,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 
 <div class="modal-bg" id="skillModal">
   <div class="modal">
-    <div class="modal-head"><h2>✨ 스킬</h2><button class="close" data-close="skillModal">×</button></div>
+    <div class="modal-head"><h2>✨ 스킬 <small id="skillPointDisplay" style="font-size:11px;color:var(--muted);font-weight:600"></small></h2><button class="close" data-close="skillModal">×</button></div>
     <div class="notice">스킬을 터치하면 상세 정보와 성장 기능을 확인할 수 있습니다.</div>
     <div id="skillList"></div>
   </div>
@@ -418,7 +418,15 @@ function enhance(){
   const requiredMs=st.speed*1000*(hotActive?.30:1);
   if(state.lastEnhanceAt && now-state.lastEnhanceAt<requiredMs){
     state.lastEnhanceAt=now;
-    consumeBandageCharge();
+    if(Math.random()<0.5){
+      const goldLoss=Math.min(10,state.gold);
+      const xpLoss=Math.min(10,state.creatorXp);
+      state.gold=Math.max(0,state.gold-10);
+      state.creatorXp=Math.max(0,state.creatorXp-10);
+      addLog("🔴 속도 패널티 발생! GOLD -"+goldLoss+"G · XP -"+xpLoss);
+    }else{
+      addLog("🔴 속도 추가 패널티를 피했다!");
+    }
     destroyWeapon("몸이 따라가지 못한 속도에 망치가 미끄러졌다");
     render();return;
   }
@@ -431,7 +439,6 @@ function openModal(id){$(id).classList.add("open")}
 function closeModal(id){$(id).classList.remove("open")}
 function renderStatus(){
   const s=stats(),effects=[];
-  $("statusSkillPoint").textContent="스킬포인트 "+state.skillPoints;
   if(state.bandageCharges>0)effects.push("붕대: 남은 강화 "+state.bandageCharges+"회");
   if(Date.now()<state.hot6Until)effects.push("핫식스 활성화");
   if(Date.now()<state.guardianUntil)effects.push("수호의 빛 활성화");
@@ -452,6 +459,7 @@ function skillDisplay(i){
   return `${s.name} (+${n})`;
 }
 function renderSkills(){
+  $("skillPointDisplay").textContent="스킬포인트 "+state.skillPoints;
   $("skillList").innerHTML="";
   skillDefs.forEach((s,i)=>{
     const n=state.skills[i],hiddenActive=s.hidden&&hasHidden(i);
